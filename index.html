@@ -4,36 +4,62 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Momiqgram Player</title>
+<link rel="icon" type="image/svg+xml" href="https://cdn-icons-png.flaticon.com/512/9154/9154733.png">
 <style>
   * { margin:0; padding:0; box-sizing:border-box; }
   body { background:#111; display:flex; flex-direction:column; justify-content:center; align-items:center; height:100vh; overflow:hidden; font-family:sans-serif; color:white; }
-  .header { position:absolute; top:10px; left:50%; transform:translateX(-50%); font-size:1.5em; font-weight:bold; letter-spacing:1px; }
-  .player-container { width:450px; height:600px; position:relative; cursor:pointer; overflow:hidden; margin-top:30px; }
+
+  /* Header & Logo */
+  .header { position:absolute; top:10px; left:50%; transform:translateX(-50%); display:flex; align-items:center; gap:10px; }
+  .logo { width:40px; height:40px; }
+  .logo svg { width:100%; height:100%; }
+  .logo-text { font-size:1.5em; font-weight:bold; letter-spacing:1px; }
+
+  /* Player */
+  .player-container { width:450px; height:600px; position:relative; cursor:pointer; overflow:hidden; margin-top:60px; }
   video { width:100%; height:100%; display:block; object-fit:cover; background:#000; transition: transform 0.4s ease; }
 
-  .like { position:absolute; bottom:20px; left:50%; transform:translateX(-50%); font-size:2.5em; color:rgba(255,255,255,0.6); pointer-events:auto; transition: color 0.3s, transform 0.3s; user-select:none; }
+  /* Like heart */
+  .like { position:absolute; bottom:60px; left:50%; transform:translateX(-50%); font-size:2.5em; color:rgba(255,255,255,0.6); pointer-events:auto; transition: color 0.3s, transform 0.3s; user-select:none; }
   .like.active { color:red; transform:translateX(-50%) scale(1.4); }
+
+  /* Share button */
+  .share-btn { position:absolute; bottom:20px; left:50%; transform:translateX(-50%); padding:8px 16px; font-size:1em; background:#222; color:white; border:none; border-radius:6px; cursor:pointer; transition: background 0.3s; }
+  .share-btn:hover { background:#555; }
 </style>
 </head>
 <body>
 
-<div class="header">momiqgram</div>
+<div class="header">
+  <div class="logo">
+    <!-- SVG Logo: simple circle with M inside -->
+    <svg viewBox="0 0 100 100">
+      <circle cx="50" cy="50" r="48" fill="#0077ff" stroke="white" stroke-width="4"/>
+      <text x="50%" y="55%" text-anchor="middle" fill="white" font-size="50" font-family="sans-serif" dy=".35em">M</text>
+    </svg>
+  </div>
+  <div class="logo-text">momiqgram</div>
+</div>
 
 <div class="player-container">
   <video id="mainPlayer" src="videos/1.mp4"></video>
   <div class="like" id="likeBtn">❤️</div>
+  <button class="share-btn" id="shareBtn">🔗 Share</button>
 </div>
 
 <script>
+// Video array
 const videos = [
   "videos/1.mp4","videos/2.mp4","videos/3.mp4","videos/4.mp4","videos/5.mp4",
   "videos/6.mp4","videos/7.mp4","videos/8.mp4","videos/9.mp4","videos/10.mp4",
   "videos/11.mp4","videos/12.mp4","videos/13.mp4","videos/14.mp4","videos/15.mp4",
   "videos/16.mp4","videos/17.mp4","videos/18.mp4","videos/19.mp4","videos/20.mp4"
 ];
+const githubBaseURL = "https://github.com/username/projectname/blob/main/";
 
 const player = document.getElementById('mainPlayer');
 const likeBtn = document.getElementById('likeBtn');
+const shareBtn = document.getElementById('shareBtn');
 let currentIndex = 0;
 let isLiked = false;
 
@@ -46,8 +72,7 @@ player.addEventListener('click',()=>{
 // Like toggle
 function toggleLike(){
   isLiked = !isLiked;
-  if(isLiked) likeBtn.classList.add('active');
-  else likeBtn.classList.remove('active');
+  likeBtn.classList.toggle('active', isLiked);
 }
 likeBtn.addEventListener('click', toggleLike);
 player.addEventListener('dblclick', toggleLike);
@@ -56,26 +81,22 @@ player.addEventListener('dblclick', toggleLike);
 function nextVideo(){
   player.style.transform = "translateY(-100%)";
   setTimeout(()=>{
-    currentIndex++;
-    if(currentIndex >= videos.length) currentIndex = 0;
+    currentIndex = (currentIndex + 1) % videos.length;
     player.src = videos[currentIndex];
     player.play();
     player.style.transform = "translateY(0)";
-    isLiked = false;
-    likeBtn.classList.remove('active');
+    isLiked = false; likeBtn.classList.remove('active');
   },400);
 }
 
 function prevVideo(){
   player.style.transform = "translateY(100%)";
   setTimeout(()=>{
-    currentIndex--;
-    if(currentIndex < 0) currentIndex = videos.length-1;
+    currentIndex = (currentIndex - 1 + videos.length) % videos.length;
     player.src = videos[currentIndex];
     player.play();
     player.style.transform = "translateY(0)";
-    isLiked = false;
-    likeBtn.classList.remove('active');
+    isLiked = false; likeBtn.classList.remove('active');
   },400);
 }
 
@@ -83,76 +104,29 @@ function prevVideo(){
 player.addEventListener('ended', nextVideo);
 
 // Touch / Swipe
-let startY = 0;
-let isTouching = false;
-
-player.addEventListener('touchstart', e => {
-  if(e.touches.length === 1){
-    startY = e.touches[0].clientY;
-    isTouching = true;
-  }
-});
-
-player.addEventListener('touchmove', e => {
-  if(!isTouching) return;
-  let moveY = e.touches[0].clientY;
-  player.style.transform = `translateY(${moveY - startY}px)`;
-});
-
-player.addEventListener('touchend', e => {
-  if(!isTouching) return;
-  let endY = e.changedTouches[0].clientY;
-  let delta = startY - endY;
-
-  if(Math.abs(delta) > 10){  // thresholdni kichik qilamiz, sekin swipe ham ishlaydi
-    if(delta > 0) nextVideo();
-    else prevVideo();
-  } else player.style.transform = "translateY(0)";
-  isTouching = false;
-});
+let startY = 0, isTouching = false;
+player.addEventListener('touchstart', e => { if(e.touches.length === 1){ startY = e.touches[0].clientY; isTouching = true; } });
+player.addEventListener('touchmove', e => { if(!isTouching) return; let moveY = e.touches[0].clientY; player.style.transform = `translateY(${moveY - startY}px)`; });
+player.addEventListener('touchend', e => { if(!isTouching) return; let endY = e.changedTouches[0].clientY; let delta = startY - endY; if(Math.abs(delta) > 10){ if(delta > 0) nextVideo(); else prevVideo(); } else player.style.transform = "translateY(0)"; isTouching = false; });
 
 // Mouse drag
-let mouseStartY = 0;
-let mouseDragging = false;
-
-player.addEventListener('mousedown', (e)=>{
-  mouseStartY = e.clientY;
-  mouseDragging = true;
-});
-
-document.addEventListener('mousemove', (e)=>{
-  if(!mouseDragging) return;
-  let moveY = e.clientY;
-  player.style.transform = `translateY(${moveY - mouseStartY}px)`;
-});
-
-document.addEventListener('mouseup', (e)=>{
-  if(!mouseDragging) return;
-  let endY = e.clientY;
-  let delta = mouseStartY - endY;
-  if(Math.abs(delta) > 10){
-    if(delta > 0) nextVideo();
-    else prevVideo();
-  } else player.style.transform = "translateY(0)";
-  mouseDragging = false;
-});
+let mouseStartY = 0, mouseDragging = false;
+player.addEventListener('mousedown', (e)=>{ mouseStartY = e.clientY; mouseDragging = true; });
+document.addEventListener('mousemove', (e)=>{ if(!mouseDragging) return; let moveY = e.clientY; player.style.transform = `translateY(${moveY - mouseStartY}px)`; });
+document.addEventListener('mouseup', (e)=>{ if(!mouseDragging) return; let endY = e.clientY; let delta = mouseStartY - endY; if(Math.abs(delta) > 10){ if(delta > 0) nextVideo(); else prevVideo(); } else player.style.transform = "translateY(0)"; mouseDragging = false; });
 
 // Keyboard - swapped arrows
-document.addEventListener('keydown', (e)=>{
-  if(e.key === "ArrowUp") prevVideo(); // ArrowUp → oldingi
-  else if(e.key === "ArrowDown") nextVideo(); // ArrowDown → keyingi
-});
+document.addEventListener('keydown', (e)=>{ if(e.key === "ArrowUp") prevVideo(); else if(e.key === "ArrowDown") nextVideo(); });
 
 // Touchpad / trackpad scroll support
 let wheelCooldown = false;
-window.addEventListener('wheel', (e)=>{
-  if(wheelCooldown) return;
-  if(Math.abs(e.deltaY) > 10){  // thresholdni kichik qilamiz
-    if(e.deltaY > 0) nextVideo();
-    else prevVideo();
-    wheelCooldown = true;
-    setTimeout(()=>{ wheelCooldown=false; }, 300);
-  }
+window.addEventListener('wheel', (e)=>{ if(wheelCooldown) return; if(Math.abs(e.deltaY) > 10){ if(e.deltaY > 0) nextVideo(); else prevVideo(); wheelCooldown = true; setTimeout(()=>{ wheelCooldown=false; }, 300); } });
+
+// Share button
+shareBtn.addEventListener('click', ()=>{
+  const currentVideo = videos[currentIndex].split('/').pop();
+  const url = githubBaseURL + currentVideo;
+  navigator.clipboard.writeText(url).then(()=>{ alert("Video havolasi nusxalandi:\n" + url); }).catch(()=>{ alert("Nusxalashda xatolik yuz berdi:\n" + url); });
 });
 </script>
 
